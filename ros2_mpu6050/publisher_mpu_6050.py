@@ -4,7 +4,7 @@ from mpu6050 import mpu6050
 import rclpy
 from rclpy.node import Node
 
-from ros2_mpu6050_interfaces.msg import Accel
+from ros2_mpu6050_interfaces.msg import Accel, Gyro
 
 #some MPU6050 Registers and their Address
 PWR_MGMT_1   = 0x6B
@@ -24,13 +24,31 @@ class MPU6050Publisher(Node):
 
     def __init__(self):
         super().__init__('mpu6050_publisher')
-        self.publisher_ = self.create_publisher(Accel, '/mpu6050/accel', 10)
-        sensor = mpu6050(Device_Address)
-        accelerometer_data = sensor.get_accel_data()
+        self.accel_publisher_ = self.create_publisher(Accel, '/mpu6050/accel', 10)
+        self.gyro_publisher_ = self.create_publisher(Gyro, '/mpu6050/gyro', 10)
+        self.sensor = mpu6050(Device_Address)
+        self.accel_timer_ = self.create_timer(0.1, self.publish_accel)
+        self.gyro_timer_ = self.create_timer(0.1, self.publish_gyro)
+
+
+    def publish_accel(self):
+        accelerometer_data = self.sensor.get_accel_data()
         msg = Accel()
         msg.x = accelerometer_data['x']
-        self.publisher_.publish(msg)
-        self.get_logger().info('Data: "%s"' % accelerometer_data)
+        msg.y = accelerometer_data['y']
+        msg.z = accelerometer_data['z']
+        self.accel_publisher_.publish(msg)
+        self.get_logger().info('Accel Data: "%s"' % accelerometer_data)
+
+
+    def publish_gyro(self):
+        gyro_data = self.sensor.get_gyro_data()
+        msg = Gyro()
+        msg.x = gyro_data['x']
+        msg.y = gyro_data['y']
+        msg.z = gyro_data['z']
+        self.gyro_publisher_.publish(msg)
+        self.get_logger().info('Gyro Data: "%s"' % gyro_data)
 
 
 
